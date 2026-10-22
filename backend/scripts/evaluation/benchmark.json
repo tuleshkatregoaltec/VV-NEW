@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "q01",
+      "title": "Sales by price bracket",
+      "question": "Break down apartment sales in JVC over the last 90 days into under AED 1 million, AED 1–2 million, and above AED 2 million. Show transaction counts and each bracket’s market share.",
+      "parameters": []
+    },
+    {
+      "id": "q02",
+      "title": "Building activity",
+      "question": "Which buildings in Business Bay recorded the most two-bedroom sales last quarter? Show transaction count, median price, and median price per sqft.",
+      "parameters": []
+    },
+    {
+      "id": "q03",
+      "title": "Typical transaction range",
+      "question": "What price range contains the middle 50% of one-bedroom apartment sales in Downtown Dubai over the last six months?",
+      "parameters": []
+    },
+    {
+      "id": "q04",
+      "title": "New leases versus renewals",
+      "question": "Compare median annual rents for new and renewed two-bedroom contracts in JLT over the last 90 days. Show the percentage difference and sample sizes.",
+      "parameters": []
+    },
+    {
+      "id": "q05",
+      "title": "Rental normalization",
+      "question": "Show rental contracts in Dubai Marina with terms longer than one year. Compare their total contract amounts with annualized rents.",
+      "parameters": []
+    },
+    {
+      "id": "q06",
+      "title": "Rental trends",
+      "question": "Show monthly median annual rent and contract count for studios in Business Bay over the last six complete months.",
+      "parameters": []
+    },
+    {
+      "id": "q07",
+      "title": "Supply concentration",
+      "question": "Which developers account for the largest share of units scheduled for delivery in Dubai South over the next two years?",
+      "parameters": []
+    },
+    {
+      "id": "q08",
+      "title": "Uncertain delivery dates",
+      "question": "How many active projects in JVC have missing or overdue completion dates? Show their unit counts separately from projects with future delivery dates.",
+      "parameters": []
+    },
+    {
+      "id": "q09",
+      "title": "Listing inventory",
+      "question": "Compare the number and median asking price of studios, one-bedroom, and two-bedroom sale listings in Dubai Hills Estate.",
+      "parameters": []
+    },
+    {
+      "id": "q10",
+      "title": "Older listings",
+      "question": "Which two-bedroom sale listings in Dubai Marina were more than 90 days old when captured? Compare their asking prices per sqft with newer comparable listings.",
+      "parameters": []
+    },
+    {
+      "id": "q11",
+      "title": "Rental-income screening",
+      "question": "Find one-bedroom sale listings in JVC below AED 1.2 million. Estimate gross yield using comparable registered rents, and show the rental evidence supporting each estimate.",
+      "parameters": []
+    },
+    {
+      "id": "q12",
+      "title": "Landlord rental appraisal report",
+      "question": "Prepare a rental appraisal report for a two-bedroom apartment in [building], JLT. Include recent new contracts, renewals, competing rental listings, and a supported annual asking-rent range.",
+      "parameters": [
+        "building"
+      ]
+    },
+    {
+      "id": "q13",
+      "title": "Seller competition report",
+      "question": "Prepare a competition report for an owner selling a one-bedroom apartment in [building], Downtown Dubai. Show competing listings, recent achieved sales, and where the owner’s AED 1.8 million asking price sits.",
+      "parameters": [
+        "building"
+      ]
+    },
+    {
+      "id": "q14",
+      "title": "Monthly area report",
+      "question": "Create a one-page Business Bay market report for my clients covering last month’s sales activity, achieved prices, registered rents, current listing inventory, and upcoming deliveries. Highlight changes from the previous month.",
+      "parameters": []
+    },
+    {
+      "id": "q15",
+      "title": "Off-plan comparison report",
+      "question": "Prepare a client report comparing [Project A], [Project B], and [Project C]. Include unit prices and sizes, payment plans, construction progress, scheduled delivery, nearby achieved prices, and missing information that needs verification.",
+      "parameters": [
+        "Project A",
+        "Project B",
+        "Project C"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,394 @@
+{
+  "get_area_market_data": {
+    "description": null,
+    "schema": {
+      "additionalProperties": false,
+      "properties": {
+        "area": {
+          "type": "string"
+        },
+        "days": {
+          "default": 365,
+          "type": "integer"
+        },
+        "stage": {
+          "default": "existing",
+          "enum": [
+            "existing",
+            "off_plan",
+            "upcoming",
+            "all"
+          ],
+          "type": "string"
+        },
+        "usage": {
+          "default": "residential",
+          "enum": [
+            "residential",
+            "commercial",
+            "mixed_use",
+            "unknown"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "area"
+      ],
+      "type": "object"
+    }
+  },
+  "get_current_plot": {
+    "description": null,
+    "schema": {
+      "additionalProperties": false,
+      "properties": {},
+      "type": "object"
+    }
+  },
+  "get_plot_land_sales": {
+    "description": null,
+    "schema": {
+      "additionalProperties": false,
+      "properties": {
+        "days": {
+          "default": 1825,
+          "type": "integer"
+        },
+        "limit": {
+          "default": 12,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "rank_pipeline_comparables": {
+    "description": null,
+    "schema": {
+      "additionalProperties": false,
+      "properties": {
+        "limit": {
+          "default": 5,
+          "type": "integer"
+        },
+        "usage": {
+          "default": "residential",
+          "enum": [
+            "residential",
+            "commercial",
+            "mixed_use",
+            "unknown"
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "rank_pricing_comparables": {
+    "description": null,
+    "schema": {
+      "additionalProperties": false,
+      "properties": {
+        "limit": {
+          "default": 5,
+          "type": "integer"
+        },
+        "usage": {
+          "default": "residential",
+          "enum": [
+            "residential",
+            "commercial",
+            "mixed_use",
+            "unknown"
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "replace_unit_mix": {
+    "description": "Replace the full unit mix with exactly the listed unit types.",
+    "schema": {
+      "$defs": {
+        "WorkspaceUnitMixReplacement": {
+          "properties": {
+            "avgSizeSqm": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "count": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "parkingRatio": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "price_sqm": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "type": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "count",
+            "avgSizeSqm"
+          ],
+          "title": "WorkspaceUnitMixReplacement",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "unit_mix": {
+          "items": {
+            "$ref": "#/$defs/WorkspaceUnitMixReplacement"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "unit_mix"
+      ],
+      "type": "object"
+    }
+  },
+  "show_analytics": {
+    "description": null,
+    "schema": {
+      "additionalProperties": false,
+      "properties": {
+        "area": {
+          "default": "",
+          "type": "string"
+        },
+        "days": {
+          "default": 365,
+          "type": "integer"
+        },
+        "project_name": {
+          "default": "",
+          "type": "string"
+        },
+        "stage": {
+          "default": "existing",
+          "enum": [
+            "existing",
+            "off_plan",
+            "upcoming",
+            "all"
+          ],
+          "type": "string"
+        },
+        "usage": {
+          "default": "residential",
+          "enum": [
+            "residential",
+            "commercial",
+            "mixed_use",
+            "unknown"
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "show_transactions": {
+    "description": null,
+    "schema": {
+      "additionalProperties": false,
+      "properties": {
+        "area": {
+          "type": "string"
+        },
+        "days": {
+          "default": 365,
+          "type": "integer"
+        },
+        "limit": {
+          "default": 50,
+          "type": "integer"
+        },
+        "stage": {
+          "default": "existing",
+          "enum": [
+            "existing",
+            "off_plan",
+            "upcoming",
+            "all"
+          ],
+          "type": "string"
+        },
+        "unit_type": {
+          "default": "",
+          "type": "string"
+        },
+        "usage": {
+          "default": "residential",
+          "enum": [
+            "residential",
+            "commercial",
+            "mixed_use",
+            "unknown"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "area"
+      ],
+      "type": "object"
+    }
+  },
+  "update_assumptions": {
+    "description": null,
+    "schema": {
+      "additionalProperties": false,
+      "properties": {
+        "assumptions": {
+          "additionalProperties": true,
+          "type": "object"
+        }
+      },
+      "required": [
+        "assumptions"
+      ],
+      "type": "object"
+    }
+  },
+  "update_payment_plan": {
+    "description": null,
+    "schema": {
+      "properties": {
+        "constructionPct": {
+          "default": 30.0,
+          "type": "number"
+        },
+        "depositPct": {
+          "default": 10.0,
+          "type": "number"
+        },
+        "handoverPct": {
+          "default": 60.0,
+          "type": "number"
+        }
+      },
+      "title": "FeasibilityPaymentPlan",
+      "type": "object"
+    }
+  },
+  "update_prices": {
+    "description": null,
+    "schema": {
+      "additionalProperties": false,
+      "properties": {
+        "prices": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "prices"
+      ],
+      "type": "object"
+    }
+  },
+  "update_unit_mix": {
+    "description": "Patch only the listed unit types, keeping unmentioned unit types unchanged.",
+    "schema": {
+      "$defs": {
+        "WorkspaceUnitMixUpdate": {
+          "properties": {
+            "avgSizeSqm": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "count": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "parkingRatio": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "price_sqm": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "type": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "count"
+          ],
+          "title": "WorkspaceUnitMixUpdate",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "unit_mix": {
+          "items": {
+            "$ref": "#/$defs/WorkspaceUnitMixUpdate"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "unit_mix"
+      ],
+      "type": "object"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="450" viewBox="0 0 500 450">
+  <defs>
+    <linearGradient id="vv-left" gradientUnits="userSpaceOnUse" x1="22" y1="25" x2="241" y2="425">
+      <stop offset="0" stop-color="#29576F" />
+      <stop offset="1" stop-color="#448C99" />
+    </linearGradient>
+    <linearGradient id="vv-right" gradientUnits="userSpaceOnUse" x1="250" y1="300" x2="478" y2="26">
+      <stop offset="0" stop-color="#43A3A8" />
+      <stop offset="1" stop-color="#4CB8B1" />
+    </linearGradient>
+  </defs>
+  <polygon fill="url(#vv-left)" points="22,25 241,425 290,339 112,25" />
+  <polygon fill="url(#vv-right)" points="478,26 300,323 250,236 390,26" />
+</svg>

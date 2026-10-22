@@ -1,0 +1,51 @@
+{
+  "chat_metadata": {
+    "total_tokens": 12,
+    "artifacts": [
+      {
+        "id": "tool-1",
+        "type": "custom_chart",
+        "status": "ready",
+        "query": {
+          "area": "JVC",
+          "days": 365
+        },
+        "data": {
+          "points": [
+            {
+              "label": "Jan",
+              "value": 12.5,
+              "record_count": 5
+            }
+          ]
+        },
+        "legacy_extension": {
+          "preserve": true
+        }
+      }
+    ]
+  },
+  "study_update": {
+    "assumptions": {
+      "plotAreaSqm": 1000,
+      "unitConfigs": [],
+      "legacy_extension": {
+        "nested": [
+          1,
+          null,
+          "value"
+        ]
+      }
+    },
+    "chat_state": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Keep this history",
+          "created_at": "2026-01-01T00:00:00Z"
+        }
+      ],
+      "history_json": "[]"
+    }
+  }
+}

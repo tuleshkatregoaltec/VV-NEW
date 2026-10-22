@@ -1,0 +1,148 @@
+{
+  "version": 1,
+  "capability_tools_sha256": "0c40345dce4aedf5fafc7c891e40102b5b41d8e1db18826ecf732c1ab0168ffd",
+  "cases": {
+    "q01": {
+      "required_sources": [
+        "transactions"
+      ],
+      "missing_capabilities": [
+        "price bracket and apartment filters"
+      ],
+      "calendar_window": null
+    },
+    "q02": {
+      "required_sources": [
+        "transactions"
+      ],
+      "missing_capabilities": [
+        "building/bedroom grouping and calendar quarter"
+      ],
+      "calendar_window": "previous_quarter"
+    },
+    "q03": {
+      "required_sources": [
+        "transactions"
+      ],
+      "missing_capabilities": [
+        "bedroom filter and quartiles"
+      ],
+      "calendar_window": null
+    },
+    "q04": {
+      "required_sources": [
+        "registered_rents"
+      ],
+      "missing_capabilities": [
+        "rental contract type and bedroom filters"
+      ],
+      "calendar_window": null
+    },
+    "q05": {
+      "required_sources": [
+        "registered_rents"
+      ],
+      "missing_capabilities": [
+        "rental term and annualization evidence"
+      ],
+      "calendar_window": null
+    },
+    "q06": {
+      "required_sources": [
+        "registered_rents"
+      ],
+      "missing_capabilities": [
+        "studio rental monthly time series"
+      ],
+      "calendar_window": "six_complete_months"
+    },
+    "q07": {
+      "required_sources": [
+        "projects"
+      ],
+      "missing_capabilities": [
+        "developer delivery concentration"
+      ],
+      "calendar_window": null
+    },
+    "q08": {
+      "required_sources": [
+        "projects"
+      ],
+      "missing_capabilities": [
+        "project completion-date status counts"
+      ],
+      "calendar_window": null
+    },
+    "q09": {
+      "required_sources": [
+        "listings"
+      ],
+      "missing_capabilities": [
+        "bedroom listing inventory aggregates"
+      ],
+      "calendar_window": null
+    },
+    "q10": {
+      "required_sources": [
+        "listings"
+      ],
+      "missing_capabilities": [
+        "listing age-at-capture and comparables"
+      ],
+      "calendar_window": null
+    },
+    "q11": {
+      "required_sources": [
+        "listings",
+        "registered_rents"
+      ],
+      "missing_capabilities": [
+        "listing-to-rental yield evidence"
+      ],
+      "calendar_window": null
+    },
+    "q12": {
+      "required_sources": [
+        "registered_rents",
+        "listings"
+      ],
+      "missing_capabilities": [
+        "building appraisal and competing rental evidence"
+      ],
+      "calendar_window": null
+    },
+    "q13": {
+      "required_sources": [
+        "listings",
+        "transactions"
+      ],
+      "missing_capabilities": [
+        "building competition and achieved sales report"
+      ],
+      "calendar_window": null
+    },
+    "q14": {
+      "required_sources": [
+        "transactions",
+        "registered_rents",
+        "listings",
+        "projects"
+      ],
+      "missing_capabilities": [
+        "multi-source calendar-month report"
+      ],
+      "calendar_window": "previous_month"
+    },
+    "q15": {
+      "required_sources": [
+        "projects",
+        "transactions"
+      ],
+      "missing_capabilities": [
+        "project prices/payment plans/progress/delivery comparison"
+      ],
+      "calendar_window": null
+    }
+  }
+}

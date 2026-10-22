@@ -1,0 +1,634 @@
+{
+  "get_market_pulse": {
+    "description": "<summary>Get vital market statistics for a specific area.\n\nReturns aggregate metrics including median price, average yield, transaction volume,\nand price trends for the specified area and time period.</summary>\n<returns>\n<description>Dictionary with price, yield, volume, and trend data</description>\n</returns>",
+    "schema": {
+      "additionalProperties": false,
+      "properties": {
+        "area": {
+          "description": "Area name (e.g., \"Dubai Marina\", \"Downtown Dubai\")",
+          "type": "string"
+        },
+        "period_days": {
+          "default": 90,
+          "description": "Analysis period in days (default: 90)",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "area"
+      ],
+      "type": "object"
+    }
+  },
+  "rank_areas": {
+    "description": "<summary>Rank top areas by a specific metric.</summary>\n<returns>\n<description>List of top areas with their respective metrics</description>\n</returns>",
+    "schema": {
+      "additionalProperties": false,
+      "properties": {
+        "metric": {
+          "default": "volume",
+          "description": "Ranking metric - \"volume\" (transaction count), \"price\" (median price),\n    or \"growth\" (price change percentage)",
+          "type": "string"
+        },
+        "limit": {
+          "default": 5,
+          "description": "Number of top areas to return (default: 5)",
+          "type": "integer"
+        },
+        "period_days": {
+          "default": 90,
+          "description": "Analysis period in days (default: 90)",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "get_similar_projects": {
+    "description": "<summary>Find similar projects based on attributes.\n\nUses ClickHouse projections to efficiently search for comparable projects\nbased on property characteristics, location, and developer.</summary>\n<returns>\n<description>List of similar projects with comparison metrics</description>\n</returns>",
+    "schema": {
+      "additionalProperties": false,
+      "properties": {
+        "project_name": {
+          "description": "Name of the reference project",
+          "type": "string"
+        },
+        "limit": {
+          "default": 5,
+          "description": "Number of similar projects to return (default: 5)",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "project_name"
+      ],
+      "type": "object"
+    }
+  },
+  "query_market_metrics": {
+    "description": "Compute sales or rental metrics from the stored DLD/DXBI records.\n\nUse this for counts, totals, averages (mean_aed), medians, quartiles, prices per sqm/sqft,\nprice brackets, rankings by building/project/community/area (area = official DLD\ndistrict), monthly series and new-versus-renewed rents. Periods are calendar periods in\nDubai time: \"last month\" is {\"type\": \"previous_month\"}, \"last quarter\"\n{\"type\": \"previous_quarter\"}, \"last 90 days\" {\"type\": \"rolling_days\", \"days\": 90}, \"last\nsix complete months\" {\"type\": \"previous_months\", \"months\": 6}. \"Average\" means mean_aed\nunless the user asks for the median.\n\nThe result states the resolved dates, coverage (complete, partial, unverified or\nunavailable; only complete means every day is verified as loaded), eligible record\ncount, metric definitions, sources, release_id and limitations. Report those with the\nnumbers. A community answer leaves out records DLD locates only by a wider district; the\nlimitations say how many. If coverage is unavailable or a value is null, say the stored\ndata does not contain it; never fill the gap from other sources.",
+    "schema": {
+      "$defs": {
+        "MarketPeriodRequest": {
+          "description": "A calendar period, resolved in the Asia/Dubai business timezone.\n\nprevious_month: the calendar month before the reference date's month (\"last month\").\nprevious_quarter: the calendar quarter before (\"last quarter\").\nprevious_months: `months` complete calendar months ending with the previous month.\nmonth / quarter: explicit \"YYYY-MM\" / \"YYYY-Qn\".\nrolling_days: `days` calendar days ending on the reference date (\"last 90 days\").\nrange: explicit inclusive start/end.",
+          "properties": {
+            "type": {
+              "enum": [
+                "previous_month",
+                "previous_quarter",
+                "previous_months",
+                "month",
+                "quarter",
+                "rolling_days",
+                "range"
+              ],
+              "type": "string"
+            },
+            "months": {
+              "anyOf": [
+                {
+                  "maximum": 120,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "days": {
+              "anyOf": [
+                {
+                  "maximum": 3660,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "month": {
+              "anyOf": [
+                {
+                  "pattern": "^\\d{4}-\\d{2}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "quarter": {
+              "anyOf": [
+                {
+                  "pattern": "^\\d{4}-[Qq][1-4]$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "start": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "end": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "title": "MarketPeriodRequest",
+          "type": "object"
+        }
+      },
+      "description": "Sales or rental metrics over served canonical records (DLD + reconciled DXBI).",
+      "properties": {
+        "dataset": {
+          "enum": [
+            "sales",
+            "rentals"
+          ],
+          "type": "string"
+        },
+        "metrics": {
+          "items": {
+            "enum": [
+              "count",
+              "total_aed",
+              "mean_aed",
+              "median_aed",
+              "p25_aed",
+              "p75_aed",
+              "mean_aed_per_sqm",
+              "median_aed_per_sqm",
+              "weighted_aed_per_sqm",
+              "mean_aed_per_sqft",
+              "median_aed_per_sqft",
+              "weighted_aed_per_sqft",
+              "total_contract_aed",
+              "median_contract_aed"
+            ],
+            "type": "string"
+          },
+          "maxItems": 14,
+          "minItems": 1,
+          "type": "array"
+        },
+        "period": {
+          "$ref": "#/$defs/MarketPeriodRequest"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "maxLength": 120,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Community or DLD area, e.g. JVC"
+        },
+        "building": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "project": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "property_type": {
+          "anyOf": [
+            {
+              "enum": [
+                "apartment",
+                "hotel_apartment",
+                "villa",
+                "office",
+                "shop",
+                "land"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "usage": {
+          "anyOf": [
+            {
+              "enum": [
+                "residential",
+                "commercial"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "bedrooms": {
+          "anyOf": [
+            {
+              "items": {
+                "enum": [
+                  "studio",
+                  "1",
+                  "2",
+                  "3",
+                  "4",
+                  "5",
+                  "6",
+                  "7"
+                ],
+                "type": "string"
+              },
+              "maxItems": 8,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "registration": {
+          "anyOf": [
+            {
+              "enum": [
+                "off_plan",
+                "ready"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Sales only"
+        },
+        "contract_version": {
+          "anyOf": [
+            {
+              "enum": [
+                "new",
+                "renewed"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Rentals only"
+        },
+        "min_term_days": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Rentals only"
+        },
+        "max_term_days": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Rentals only"
+        },
+        "min_value_aed": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Sale price or annual rent, inclusive"
+        },
+        "max_value_aed": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Sale price or annual rent, exclusive"
+        },
+        "group_by": {
+          "anyOf": [
+            {
+              "enum": [
+                "area",
+                "community",
+                "master_project",
+                "project",
+                "building",
+                "month",
+                "bedrooms",
+                "property_type",
+                "price_band",
+                "registration",
+                "contract_version"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "price_bands": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 12,
+              "minItems": 1,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Ascending AED boundaries for group_by=price_band: [b0,b1) ... [bn,inf)"
+        },
+        "sort_by": {
+          "default": "count",
+          "enum": [
+            "count",
+            "total_aed",
+            "mean_aed",
+            "median_aed",
+            "p25_aed",
+            "p75_aed",
+            "mean_aed_per_sqm",
+            "median_aed_per_sqm",
+            "weighted_aed_per_sqm",
+            "mean_aed_per_sqft",
+            "median_aed_per_sqft",
+            "weighted_aed_per_sqft",
+            "total_contract_aed",
+            "median_contract_aed"
+          ],
+          "type": "string"
+        },
+        "limit": {
+          "default": 20,
+          "maximum": 200,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "min_group_count": {
+          "default": 1,
+          "maximum": 10000,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "compare_with_previous_period": {
+          "default": false,
+          "type": "boolean"
+        },
+        "reference_date": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Defaults to today in Asia/Dubai"
+        }
+      },
+      "required": [
+        "dataset",
+        "period"
+      ],
+      "title": "MarketMetricsRequest",
+      "type": "object"
+    }
+  },
+  "get_listing_inventory": {
+    "description": "Current Property Finder listing inventory: count and asking prices.\n\nThese are asking prices from the latest captured listing snapshot, not achieved prices.\nMedians here are approximate (t-digest). snapshot_at is when the inventory was captured.",
+    "schema": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "description": "\"sale\" or \"rent\" (rent prices are annual)",
+          "enum": [
+            "sale",
+            "rent"
+          ],
+          "type": "string"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Community, e.g. \"Dubai Hills Estate\" or \"JVC\""
+        },
+        "bedrooms": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Bedroom value as listed, e.g. \"studio\", \"1\", \"2\""
+        },
+        "property_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Listing property type, e.g. \"Apartment\""
+        },
+        "price_max": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Maximum asking price in AED"
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "type": "object"
+    }
+  },
+  "get_project_delivery_summary": {
+    "description": "DLD-registered projects and units by delivery status, developer, year or project.\n\nDelivery status on the reference date (Dubai): missing_date, overdue,\nscheduled_in_horizon (planned end within horizon_months), scheduled_later, completed,\ncancelled. project_statuses are DLD register statuses (default [\"ACTIVE\"]).\nExample: developers' share of units due in the next two years ->\ngroup_by=\"developer\", delivery_statuses=[\"scheduled_in_horizon\"], horizon_months=24.",
+    "schema": {
+      "additionalProperties": false,
+      "properties": {
+        "location": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "group_by": {
+          "default": "developer",
+          "enum": [
+            "developer",
+            "delivery_status",
+            "delivery_year",
+            "project"
+          ],
+          "type": "string"
+        },
+        "delivery_statuses": {
+          "anyOf": [
+            {
+              "items": {
+                "enum": [
+                  "missing_date",
+                  "overdue",
+                  "scheduled_in_horizon",
+                  "scheduled_later",
+                  "completed",
+                  "cancelled"
+                ],
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "horizon_months": {
+          "default": 24,
+          "type": "integer"
+        },
+        "project_statuses": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "reference_date": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "type": "object"
+    }
+  }
+}

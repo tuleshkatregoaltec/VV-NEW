@@ -1,0 +1,108 @@
+Property found, owner unverified — scan and options
+Import: #107, Damac Hills 2 JAN 2025
+Rows scanned: 13,432 saved claims
+
+What the status means
+The importer linked a property or plot to the source row, but the available evidence did not prove that the named contact acquired or currently owns it. Finding the same unit in sales or rental data does not by itself identify the contact as the owner.
+
+Scan results
+
+1) 10,841 rows — DLD plot/land matched; individual unit not verified
+The land number and location match a DLD plot, but there is no verified individual villa/apartment unit. Without a unit-level link and ownership evidence, the importer cannot safely confirm an owner.
+
+2) 2,548 rows — procedure or role does not establish a sale acquisition/disposal
+Procedure breakdown:
+- Mortgage Registration: 2,011
+- Lease to Own Registration: 161
+- Delayed Mortgage: 54
+- Grant: 28
+- Lease Finance Registration: 24
+- Mortgage Pre-Registration: 15
+- Grant on Delayed Sell: 10
+- Modify Mortgage: 2
+- Lease to Own Transfer: 2
+- Blank procedure and role: 241
+
+Mortgage and lease records can link a contact to a property or financial/lease event, but they do not prove that the contact acquired or currently owns it.
+
+3) 43 rows — rental unit matched; no acquisition evidence found
+The rental data identifies a lease-opportunity unit. A rental match alone does not establish ownership.
+
+Three approaches
+
+Approach 1 — Separate the rows by evidence (recommended first)
+Show clearer categories such as:
+- Plot found, unit unresolved
+- Mortgage/lease linked, owner unverified
+- Rental linked, owner unverified
+
+This explains the current 13,432 rows and gives each group a next action. Changing the label does not verify ownership. This is the safest approach because it does not treat mortgage or rental data as ownership proof.
+
+Approach 2 — Auto-match only unique DLD sale evidence
+For rows with an individual unit, match the source to a unique DLD sale using the agreed fields, such as unit/building, date and price. Infer acquisition only when the sale match is unique and the source event is eligible under the business rule. Keep mortgage, rental, ambiguous matches, and unmatched dates/prices unverified.
+
+Some of the 2,548 event rows may be resolvable this way, but the exact number was not established by this scan. The 10,841 plot rows need an individual-unit link before unit-level sale matching can verify ownership.
+
+The read-only full scan on 22 Oct 2026 below subsequently tested a DLD pre-registration-number-to-sale-unit bridge for the 10,841 plot rows. Its projected counts are recorded below; no claim statuses were changed.
+
+Approach 3 — Obtain an authoritative owner source
+Ask for owner/title-deed records or DLD party records that directly connect the contact to the property. This may resolve plot-only records and records whose source date/amount does not match an available sale. It requires an authoritative data source and an agreed matching policy.
+
+Recommended path
+Start with Approach 1 so the 13,432 rows are clearly explained. Then apply Approach 2 to unique, eligible DLD sale matches. Use Approach 3 for rows that still lack a unit-level or contact-level ownership link. Do not promote rental or mortgage matches to Verified owner unless the client explicitly approves a separate business rule and status.
+
+Example: XR1063B, Vardon
+
+Field | File row | ClickHouse evidence | Result
+Unit | XR1063B | Sales: DH2-XR1063B (26 Dec 2016), XR1063B (16 Jul 2026); rental candidate: XR1063B | Property/unit found
+Building | Vardon | Vardon | Match
+File date | 14 May 2024 | Sales on 26 Dec 2016 and 16 Jul 2026 | No sale near the file date
+File amount | AED 1,088,000 | Latest sale AED 1,250,000 on 16 Jul 2026 | Not the same sale signature
+Role/procedure | Blank/blank | — | Contact is not identified as Buyer or Seller
+Rental | — | Rental unit candidate exists | Rental evidence does not prove ownership
+
+Result: The unit/property is identified, but there is no matching 2024 sale or direct ownership link for the contact. The row remains Property found, owner unverified.
+
+Question for the client
+“Should Verified owner require a unique DLD sale match, or do you have another approved ownership source? Should mortgage and rental matches appear as separate linked labels while ownership remains unverified?”
+
+Full ClickHouse scan and dry-run projection — 22 Oct 2026
+
+Scope
+- Import #107, all 13,432 claims currently shown as Property found, owner unverified.
+- Read-only PostgreSQL and ClickHouse queries. No database rows or code were changed.
+- The 10,841 land-only claims had 4,359 distinct exact DLD plot keys. All 4,359 had a DLD `pre_registration_number`.
+- The source `pre_registration_number` was treated as a candidate unit identifier. `DH2-` prefixes were also checked without the prefix, because DXBI sales can store the same unit without it.
+
+Land-to-sale matching
+- 3,858 land-only claim rows had a sale-unit candidate from the pre-registration code before file-location checks.
+- Applying the import's Damac Hills 2 location context and the current location ranking selected one sale-property identity for 3,558 rows.
+- 40 rows had ambiguous sale-property identities.
+- 7,243 rows had no sale candidate in the import's location context.
+- Among the 3,558 selected property candidates: 3,149 projected as Former owner, 9 as Probable owner, and 400 remained owner-unverified.
+- No land-only row projected as Verified owner.
+
+Other unit-identified claims
+- 2,591 claims already had a unit number. Running the current sales resolver/classifier read-only left 2,411 owner-unverified and 180 unmatched.
+- A stricter location-filtered check found 8 date/price signatures in this group; all were `Lease to Own Registration`. The current event rules do not treat those as ordinary sale acquisition evidence, so they were not promoted.
+
+Projected status totals for the 13,432 rows
+
+Status | Projected rows
+Verified owner | 0
+Probable owner | 9
+Former owner | 3,149
+Owner unverified | 10,094
+Unmatched | 180
+
+The counts are row claims, not unique people or unique properties. The 3,149 Former owner projection follows the existing ownership rules after the proposed unit bridge: an eligible Seller row is Former, and a Buyer row is Former when a later sale is present. The 9 Probable rows follow the existing probable-owner rules. These are not direct named-party confirmations: `dxbi_sales_unit_events` does not contain buyer/seller names. The source role and transaction details plus property mapping provide the inference.
+
+Additional source-field checks
+- The ClickHouse DLD land table has `municipality_number`, but no separate `municipality_sub_number` column. Source Municipality Sub No exactly matched DLD municipality_number on 80 of the 4,359 distinct plot keys; source Municipality No is not directly comparable to a separate ClickHouse field.
+- Source Actual Size was compared numerically with DLD `actual_area` (no unit conversion). Of 4,279 comparable distinct plot keys, 256 were within 1%. This is too sparse to use Actual Size as a required match key.
+- Land number plus the stored exact area/project plot identity established the DLD plot. Pre-registration number was the candidate bridge from that plot to a sale unit; sale history alone did not identify the named contact.
+
+Interpretation
+- If the pre-registration bridge is approved and implemented, the dry-run suggests 3,149 rows could move to Former owner and 9 to Probable owner. Another 180 would be Unmatched; 10,094 would remain owner-unverified.
+- These are projected outcomes, not applied CRM statuses. Validate the pre-registration-to-unit relationship and have the client approve the ownership inference before rematching production claims.
+- An earlier narrow check reported 2 date/price signature rows. That figure was not a full status projection and should not be used as the expected total transitions; the full scan above is the current reference for this question.
