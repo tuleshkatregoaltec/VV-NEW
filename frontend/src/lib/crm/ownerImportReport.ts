@@ -15,6 +15,8 @@ export type ClaimStatus =
 	| 'insufficient_property_data'
 	| 'registry_not_observed'
 	| 'unmatched'
+	/** Report-only: mortgage rows taken out of "unverified" and "needs review". */
+	| 'mortgage'
 
 /** A DLD property was found for the row. */
 export const MATCHED_STATUSES: ClaimStatus[] = [
@@ -71,6 +73,11 @@ export const STATUS_INFO: Record<ClaimStatus, { label: string; meaning: string; 
 		label: 'Needs review',
 		meaning: 'Property identity or the event’s ownership effect is unverified',
 		tone: 'amber'
+	},
+	mortgage: {
+		label: 'Mortgage',
+		meaning: 'A mortgage or finance registration; it does not show who bought the property',
+		tone: 'neutral'
 	}
 }
 
@@ -110,6 +117,10 @@ export const STATUS_HELP: Record<ClaimStatus, { how: string; todo: string }> = {
 	unmatched: {
 		how: 'The unit number exists in several DLD buildings and the file’s building / project did not clearly pick one (needs a score of 55 and a 12-point lead). Confidence 20%.',
 		todo: 'Write the building name the way DLD does, then upload again.'
+	},
+	mortgage: {
+		how: 'Rows that would be “Property found, owner unverified” or “Needs review” and whose procedure is a mortgage or finance registration. In these rows the Seller is the owner who took the loan and the Buyer is the bank. A mortgage followed by a later sale stays “Former owner”.',
+		todo: 'Treat the Seller as the owner on the mortgage date; check for a later sale before contacting.'
 	}
 }
 
@@ -120,7 +131,7 @@ type SummaryCount = {
 		: never
 }[keyof CrmContactImportSummary]
 
-const SUMMARY_KEY: Record<ClaimStatus, SummaryCount> = {
+const SUMMARY_KEY: Record<Exclude<ClaimStatus, 'mortgage'>, SummaryCount> = {
 	verified_current_owner: 'verified_current_owners',
 	probable_current_owner: 'probable_current_owners',
 	unit_linked_unverified: 'unit_linked_unverified',
@@ -154,16 +165,32 @@ export interface ImportCounts {
 	droppedLog: boolean
 }
 
-export function importCounts(summary: CrmContactImportSummary): ImportCounts {
+/**
+ * `mortgageByStatus` is the import's mortgage rows per stored status (unverified / needs review);
+ * they are reported in their own "Mortgage" tile. Matched and failed totals are unchanged.
+ */
+export function importCounts(
+	summary: CrmContactImportSummary,
+	mortgageByStatus: Partial<Record<string, number>> = {}
+): ImportCounts {
 	const n = (key: SummaryCount) => summary[key] ?? 0
 	const byStatus = Object.fromEntries(
-		(Object.keys(SUMMARY_KEY) as ClaimStatus[]).map((s) => [s, n(SUMMARY_KEY[s])])
+		(Object.keys(SUMMARY_KEY) as Exclude<ClaimStatus, 'mortgage'>[]).map((s) => [
+			s,
+			n(SUMMARY_KEY[s])
+		])
 	) as Record<ClaimStatus, number>
 	const sum = (list: ClaimStatus[]) => list.reduce((t, s) => t + byStatus[s], 0)
 	const rows = n('total_rows')
 	const kept = n('candidate_rows')
 	const merged = n('duplicate_rows_collapsed')
 	const matched = sum(MATCHED_STATUSES)
+	const failed = sum(FAILED_STATUSES)
+	const unverifiedMortgages = mortgageByStatus.unit_linked_unverified ?? 0
+	const reviewMortgages = mortgageByStatus.unmatched ?? 0
+	byStatus.unit_linked_unverified -= unverifiedMortgages
+	byStatus.unmatched -= reviewMortgages
+	byStatus.mortgage = unverifiedMortgages + reviewMortgages
 	return {
 		rows,
 		kept,
@@ -174,7 +201,7 @@ export function importCounts(summary: CrmContactImportSummary): ImportCounts {
 		merged,
 		dropped: Math.max(0, rows - kept - merged),
 		matched,
-		failed: sum(FAILED_STATUSES),
+		failed,
 		readyToContact: n('contact_ready'),
 		rentalLeads: n('rental_opportunities'),
 		matchRate: kept ? matched / kept : null,

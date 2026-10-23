@@ -301,6 +301,8 @@ class CrmContactImportResponse(BaseModel):
     status: CrmContactImportStatus
     summary: CrmContactImportSummary
     mappings: list[CrmSheetMapping] = Field(default_factory=list)
+    # Report-only: mortgage rows per stored status, shown as their own "Mortgage" category.
+    mortgage_by_status: dict[str, int] = Field(default_factory=dict)
     error_message: str | None = None
     created_at: datetime
     completed_at: datetime | None = None
@@ -350,6 +352,8 @@ class CrmContactClaimResponse(BaseModel):
     lease_end: date | None = None
     annual_rent_aed: int | None = SQLField(default=None, sa_type=BigInteger)
     owner_key: str
+    # Report-only category; "mortgage" for a mortgage row that is unverified or needs review.
+    report_status: str | None = None
     duplicate_count: int = 1
     source_rows: list[str] = Field(default_factory=list)
 

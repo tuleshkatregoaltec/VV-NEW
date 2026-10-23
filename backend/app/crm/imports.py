@@ -50,6 +50,7 @@ from app.crm.import_parsing import (
 )
 from app.crm.owners import _invalidate_owner_summary_cache
 from app.crm.ownership import (
+    _apply_companion_ownership,
     _apply_evidence,
     _recover_property_identity_from_near_transaction,
     _recover_property_identity_from_transaction,
@@ -174,6 +175,7 @@ async def process_contact_import(
         sales.update(await villa_sales_for_plots(candidates))
         for candidate in candidates:
             _apply_evidence(candidate, sales=sales, rentals=rentals)
+        _apply_companion_ownership(candidates, sales)
         # Each source event is persisted independently. Repeated owner/property
         # rows are history, not duplicates; unresolved identities remain reviewable.
         dropped_no_unit = duplicate_rows_collapsed = 0
@@ -336,6 +338,13 @@ async def _import_response(
         status=record.status,  # type: ignore[arg-type]
         summary=CrmContactImportSummary.model_validate(record.summary or {}),
         mappings=[CrmSheetMapping.model_validate(item) for item in raw_sheets],
+        mortgage_by_status=dict(
+            await import_repository.count_mortgage_review_by_status(
+                db, record.organization_id, record.id
+            )
+        )
+        if record.status == "completed"
+        else {},
         error_message=record.error_message,
         created_at=record.created_at,
         completed_at=record.completed_at,

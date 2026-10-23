@@ -656,6 +656,26 @@ def _candidate_from_row(
             },
         }
     )
+    for header in profile.headers:
+        token = _header_token(header.key)
+        if header.index >= len(row) or token not in {
+            "uaeidnumber",
+            "emiratesid",
+            "idnumber",
+            "passport",
+            "passportnumber",
+        }:
+            continue
+        value = re.sub(r"[^a-z0-9]", "", _text(row[header.index]).casefold())
+        if len(value) < 5 or len(set(value)) == 1 or not any(c.isdigit() for c in value):
+            continue
+        kind = "emirates_id" if token in {"uaeidnumber", "emiratesid"} else "document"
+        if kind == "emirates_id" and (len(value) != 15 or not value.startswith("784")):
+            continue
+        candidate.owner_identity_tokens[kind] = hashlib.sha256(
+            f"{kind}:{value}".encode()
+        ).hexdigest()
+        
     if area_source_field:
         candidate.evidence["source_area_field"] = area_source_field
     source_unit = re.sub(r"\s+", "", _text(_field_value(row, profile, "unit_number"))).upper()

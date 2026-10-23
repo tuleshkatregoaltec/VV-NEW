@@ -94,6 +94,9 @@ class ParsedContact:
     annual_rent_aed: int | None = None
     evidence: dict[str, Any] = field(default_factory=dict)
 
+    # Used only while parsing/replaying a file; never persisted in claim evidence.
+    owner_identity_tokens: dict[str, str] = field(default_factory=dict, repr=False)
+
     @property
     def has_valid_contact(self) -> bool:
         return bool(self.phone_primary or self.phone_alternate or self.email_primary)

@@ -472,7 +472,7 @@ async def crm_contact_list(
         pattern=(
             "^(verified_current_owner|probable_current_owner|unit_linked_unverified|"
             "former_owner|conflicting_claim|insufficient_property_data|"
-            "registry_not_observed|unmatched)$"
+            "registry_not_observed|unmatched|mortgage)$"
         ),
     ),
     search: str | None = Query(default=None, max_length=160),

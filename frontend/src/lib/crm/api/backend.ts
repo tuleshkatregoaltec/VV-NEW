@@ -1306,7 +1306,7 @@ export async function listOwnerImportDetails(): Promise<OwnerImportDetail[]> {
 				at: stamp(r.created_at),
 				createdAt: r.created_at,
 				listId: r.list_id ?? null,
-				counts: importCounts(r.summary),
+				counts: importCounts(r.summary, r.mortgage_by_status ?? {}),
 				sheets: mappings.map((m) => ({
 					name: m.sheet_name,
 					rows: m.meaningful_rows,
@@ -1354,7 +1354,7 @@ export async function listOwnerImportRows(
 				unit: c.unit_number,
 				date: c.transaction_date ?? null,
 				price: c.transaction_price_aed ?? null,
-				status: c.ownership_status,
+				status: c.report_status === 'mortgage' ? 'mortgage' : c.ownership_status,
 				confidence: c.confidence_score,
 				reason: c.match_reason,
 				sheet: c.source_sheet,

@@ -4,6 +4,7 @@ from sqlalchemy import and_, delete, func, or_
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.crm.import_events import MORTGAGE_REPORT_STATUSES
 from app.crm.import_models import (
     CrmContactImport,
     CrmContactList,
@@ -221,6 +222,28 @@ async def count_claims_by_status(db: AsyncSession, organization_id, record_id):
             .where(
                 CrmPropertyContactClaim.organization_id == organization_id,
                 CrmPropertyContactClaim.import_id == record_id,
+            )
+            .group_by(CrmPropertyContactClaim.ownership_status)
+        )
+    ).all()
+
+
+async def count_mortgage_review_by_status(db: AsyncSession, organization_id, record_id):
+    """Mortgage rows among unverified / needs-review rows (see import_events.is_mortgage_review)."""
+    family = func.coalesce(CrmPropertyContactClaim.evidence["event_family"].as_string(), "")
+    procedure = CrmPropertyContactClaim.procedure_type
+    financing = or_(
+        family == "financing",
+        and_(family == "", or_(procedure.ilike("%mortgage%"), procedure.ilike("%finance%"))),
+    )
+    return (
+        await db.exec(
+            select(CrmPropertyContactClaim.ownership_status, func.count())
+            .where(
+                CrmPropertyContactClaim.organization_id == organization_id,
+                CrmPropertyContactClaim.import_id == record_id,
+                CrmPropertyContactClaim.ownership_status.in_(MORTGAGE_REPORT_STATUSES),
+                financing,
             )
             .group_by(CrmPropertyContactClaim.ownership_status)
         )

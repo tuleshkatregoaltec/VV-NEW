@@ -27,6 +27,25 @@ def event_family(procedure: str) -> str:
     return "unknown" if label else "contact_snapshot"
 
 
+# Report-only category: stored statuses are unchanged; mortgages are shown apart from them.
+MORTGAGE_REPORT_STATUSES = ("unit_linked_unverified", "unmatched")
+
+
+def is_mortgage_review(claim) -> bool:
+    """An unverified or needs-review row whose event is a mortgage or other financing."""
+    if claim.ownership_status not in MORTGAGE_REPORT_STATUSES:
+        return False
+    family = (claim.evidence or {}).get("event_family") or event_family(claim.procedure_type or "")
+    return family == "financing"
+
+
+def matches_report_status(claim, status: str) -> bool:
+    """Whether a row belongs to a report category ("mortgage" or a stored status)."""
+    if status == "mortgage":
+        return is_mortgage_review(claim)
+    return claim.ownership_status == status and not is_mortgage_review(claim)
+
+
 def has_sale_evidence(candidate) -> bool:
     """Only explicit sales may use sale date/amount as acquisition evidence.
 

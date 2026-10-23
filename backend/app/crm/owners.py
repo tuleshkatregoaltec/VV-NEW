@@ -21,6 +21,7 @@ from app.crm.identity import (
     _usable_project_name,
 )
 from app.crm.import_context import property_details
+from app.crm.import_events import is_mortgage_review, matches_report_status
 from app.crm.import_models import (
     CrmContactClaimResponse,
     CrmContactList,
@@ -102,6 +103,7 @@ def _claim_response(
         lease_end=claim.lease_end,
         annual_rent_aed=claim.annual_rent_aed,
         owner_key=_claim_owner_key(claim),
+        report_status="mortgage" if is_mortgage_review(claim) else None,
         duplicate_count=_claim_duplicate_count(grouped),
         source_rows=_claim_source_rows(grouped),
     )
@@ -181,7 +183,7 @@ async def get_contact_list(
         matching_groups = [
             group
             for group in matching_groups
-            if max(group, key=_claim_preference).ownership_status == status
+            if matches_report_status(max(group, key=_claim_preference), status)
         ]
     visible = matching_groups[offset : offset + limit]
     all_list_result = await owner_repository.list_claims_for_list(db, list_id, organization_id)

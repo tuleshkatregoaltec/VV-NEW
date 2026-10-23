@@ -1011,6 +1011,143 @@ def _apply_evidence(
         "sales history."
     )
 
+def _apply_companion_ownership(
+    candidates: list[ParsedContact], sales: dict[str, list[dict[str, Any]]]
+) -> None:
+    """Use independent named acquisition/disposal evidence after ordinary row matching."""
+    groups = {}
+    for peer in candidates:
+        if not peer.property_key or not (has_sale_evidence(peer) or is_owner_list_entry(peer)):
+            continue
+        history = sales.get(peer.property_key, [])
+        original_unit = (
+            peer.evidence.get("property_identity_resolution", {})
+            .get("source", {})
+            .get("unit_number", peer.unit_number)
+        )
+        unit = _normalize_unit(original_unit).lower().removeprefix("dh2-")
+        matching = [
+            event
+            for event in history
+            if unit
+            and unit
+            == _normalize_unit(event.get("unit_number", peer.unit_number))
+            .lower()
+            .removeprefix("dh2-")
+            and peer.transaction_date
+            and peer.transaction_price_aed
+            and event.get("sale_amount_aed")
+            and _price_matches(peer.transaction_price_aed, int(event["sale_amount_aed"]))
+        ]
+        exact = [event for event in matching if event["transaction_date"] == peer.transaction_date]
+        shifted = [
+            event
+            for event in matching
+            if peer.ownership_status == "probable_current_owner"
+            and peer.party_role != "Seller"
+            and event["transaction_date"] == history[-1]["transaction_date"]
+            and 0 < abs((event["transaction_date"] - peer.transaction_date).days) <= 14
+        ]
+        # Snapshot ordinary statuses so derived results cannot become new acquisition proof.
+        key = (_candidate_owner_key(peer), peer.property_key)
+        groups.setdefault(key, []).append((peer, peer.ownership_status, exact, shifted))
+
+    for candidate in candidates:
+        candidate.evidence.pop("companion_ownership", None)
+        if candidate.ownership_status != "unit_linked_unverified":
+            continue
+        history = sales.get(candidate.property_key, [])
+        if not history:
+            continue
+        latest = history[-1]
+        own = groups.get((_candidate_owner_key(candidate), candidate.property_key), [])
+        valid = []
+        for peer, status, exact, shifted in own:
+            if peer is candidate:
+                continue
+            a, b = candidate.owner_identity_tokens, peer.owner_identity_tokens
+            if (
+                a.get("emirates_id")
+                and b.get("emirates_id")
+                and a["emirates_id"] != b["emirates_id"]
+            ):
+                continue
+            same_id = any(value == b.get(kind) for kind, value in a.items())
+            if not same_id and not (candidate.has_valid_contact and peer.has_valid_contact):
+                continue
+            valid.append((peer, status, exact, shifted))
+        current = [
+            record
+            for record in valid
+            if record[1] == "verified_current_owner"
+            and record[2]
+            and record[0].transaction_date == latest["transaction_date"]
+        ]
+        if current and any(
+            peer.party_role == "Seller"
+            and exact
+            and peer.transaction_date >= max(record[0].transaction_date for record in current)
+            for peer, _, exact, _ in valid
+        ):
+            continue
+        former = [
+            record
+            for record in valid
+            if record[2]
+            and candidate.transaction_date
+            and candidate.transaction_date < latest["transaction_date"]
+            and (
+                record[0].transaction_date < latest["transaction_date"]
+                or (
+                    record[0].party_role == "Seller"
+                    and record[0].transaction_date > candidate.transaction_date
+                )
+            )
+        ]
+        # Even an unconfirmed newer acquisition must prevent a former-owner assertion.
+        if any(
+            peer.party_role != "Seller"
+            and peer.transaction_date
+            and peer.transaction_date >= latest["transaction_date"]
+            for peer, _, _, _ in own
+        ):
+            former = []
+        probable = [record for record in valid if record[3]]
+        if current:
+            peer, _, events, _ = current[0]
+            status, confidence = "verified_current_owner", 98
+            reason = "A separate acquisition record for this same contact and property matches the latest sale date and price."
+        elif former:
+            peer, _, events, _ = former[0]
+            status, confidence = "former_owner", 99
+            reason = "Independent ownership evidence links this contact to the property, but a later sale follows the source event."
+            candidate.later_sale_date = latest["transaction_date"]
+        elif probable:
+            peer, _, _, events = probable[0]
+            status, confidence = "probable_current_owner", 80
+            reason = "A separate acquisition record links this contact and property to the latest sale amount; its 1–14 day date difference requires review."
+        else:
+            continue
+        event = events[0]
+        candidate.ownership_status = status
+        candidate.confidence_score = confidence
+        candidate.latest_sale_date = latest["transaction_date"]
+        candidate.latest_sale_price_aed = int(latest["sale_amount_aed"])
+        candidate.match_reason = (
+            reason + " The source procedure, role, date and amount are unchanged."
+        )
+        candidate.evidence["companion_ownership"] = {
+            "status": status,
+            "source_filename": str(peer.evidence.get("source_filename") or ""),
+            "source_row_fingerprint": peer.row_fingerprint,
+            "source_sheet": peer.source_sheet,
+            "source_row_number": peer.source_row_number,
+            "source_acquisition_date": str(peer.transaction_date),
+            "registry_sale_date": str(event["transaction_date"]),
+            "registry_sale_price_aed": int(event["sale_amount_aed"]),
+            "sale_key": str(event.get("sale_key") or ""),
+            "date_delta_days": abs((event["transaction_date"] - peer.transaction_date).days),
+        }
 
 async def rematch_property_contact_claims(
     db: AsyncSession,
@@ -1084,6 +1221,10 @@ async def rematch_property_contact_claims(
     rentals = await _rental_evidence(candidates)
     await resolve_cadastral_plots(candidates)
     sales.update(await villa_sales_for_plots(candidates))
+    for candidate in candidates:
+        _apply_evidence(candidate, sales=sales, rentals=rentals)
+    _apply_companion_ownership(candidates, sales)
+    
     now = datetime.now(timezone.utc)
     status_counts: dict[str, int] = {}
     for claim, candidate in zip(claims, candidates, strict=True):

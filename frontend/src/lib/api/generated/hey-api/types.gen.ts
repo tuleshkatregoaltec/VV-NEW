@@ -1164,6 +1164,10 @@ export type CrmContactClaimResponse = {
      */
     owner_key: string;
     /**
+     * Report Status
+     */
+    report_status?: string | null;
+    /**
      * Duplicate Count
      */
     duplicate_count?: number;
@@ -1212,6 +1216,12 @@ export type CrmContactImportResponse = {
      * Mappings
      */
     mappings?: Array<CrmSheetMapping>;
+    /**
+     * Mortgage By Status
+     */
+    mortgage_by_status?: {
+        [key: string]: number;
+    };
     /**
      * Error Message
      */

@@ -227,3 +227,28 @@ describe('failureReasons', () => {
 		).toEqual([])
 	})
 })
+
+describe('mortgage category', () => {
+	// Damac Hills 2 (import 113): mortgages move out of "unverified" and "needs review" into their
+	// own tile, so those tiles show only the rows that still need work. Totals stay the same.
+	const DH2 = { candidate_rows: 31393, unit_linked_unverified: 3752, unmatched: 2381 }
+	const MORTGAGES = { unit_linked_unverified: 2371, unmatched: 973 }
+
+	it('reports mortgages as their own category', () => {
+		const c = importCounts(DH2, MORTGAGES)
+		expect(c.byStatus.mortgage).toBe(3344)
+		expect(c.byStatus.unit_linked_unverified).toBe(1381)
+		expect(c.byStatus.unmatched).toBe(1408)
+	})
+
+	it('keeps the matched and failed totals unchanged', () => {
+		const before = importCounts(DH2)
+		const after = importCounts(DH2, MORTGAGES)
+		expect(after.matched).toBe(before.matched)
+		expect(after.failed).toBe(before.failed)
+	})
+
+	it('shows no mortgages for an import without the breakdown', () => {
+		expect(importCounts(DH2).byStatus.mortgage).toBe(0)
+	})
+})

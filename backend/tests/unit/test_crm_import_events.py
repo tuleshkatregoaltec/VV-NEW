@@ -10,7 +10,7 @@ import pytest
 from app.crm import owner_queries
 from app.crm.cadastral import _select_plot, _villa_code_variants, villa_sales_for_plots
 from app.crm.identity import _candidate_owner_key, _claim_preference
-from app.crm.import_events import event_family
+from app.crm.import_events import event_family, is_mortgage_review, matches_report_status
 from app.crm.import_models import CrmPropertyContactClaim
 from app.crm.import_parsing import _inspect_csv, _inspect_xlsx, _parse_csv, _parse_xlsx
 from app.crm.ownership import (
@@ -212,3 +212,57 @@ async def test_villa_sales_link_plot_to_its_own_community_only(monkeypatch):
         date(2016, 11, 29),
         date(2024, 2, 13),
     ]
+
+
+def _claim(status, procedure, family=None):
+    evidence = {"event_family": family} if family else {}
+    return CrmPropertyContactClaim(
+        ownership_status=status, procedure_type=procedure, evidence=evidence
+    )
+
+
+@pytest.mark.parametrize(
+    ("status", "procedure", "family", "expected"),
+    [
+        ("unit_linked_unverified", "Mortgage Registration", "financing", True),
+        ("unmatched", "Delayed Mortgage", "financing", True),
+        # Imports made before event families were stored still read the procedure.
+        ("unmatched", "Lease Finance Registration", None, True),
+        # A later sale or an unresolved property keeps its stronger, existing answer.
+        ("former_owner", "Mortgage Registration", "financing", False),
+        ("insufficient_property_data", "Mortgage Registration", "financing", False),
+        ("unit_linked_unverified", "Complete Delayed Sell", "sale", False),
+    ],
+)
+def test_report_mortgage_category_covers_unverified_and_needs_review_only(
+    status, procedure, family, expected
+):
+    # Mortgages are reported apart so "unverified" and "needs review" show real gaps.
+    assert is_mortgage_review(_claim(status, procedure, family)) is expected
+
+
+def test_report_status_filter_moves_mortgages_out_of_their_stored_status():
+    mortgage = _claim("unit_linked_unverified", "Mortgage Registration", "financing")
+    sale = _claim("unit_linked_unverified", "Complete Delayed Sell", "sale")
+
+    assert matches_report_status(mortgage, "mortgage")
+    assert not matches_report_status(mortgage, "unit_linked_unverified")
+    assert matches_report_status(sale, "unit_linked_unverified")
+    assert not matches_report_status(sale, "mortgage")
+
+def test_source_identity_is_available_for_matching_but_never_persisted_in_evidence():
+    row = parse(
+        "NameEn,BuildingNameEn,UnitNumber,IdNumber,UaeIdNumber\nExample,Tower,101,AB1234567,784197003510696\n"
+    )[0]
+    assert set(row.owner_identity_tokens) == {"document", "emirates_id"}
+    assert all(len(token) == 64 for token in row.owner_identity_tokens.values())
+    assert "AB1234567" not in str(row.evidence)
+    assert "784197003510696" not in str(row.evidence)
+    assert "AB1234567" not in repr(row)
+    assert "owner_identity_tokens" not in row.evidence
+
+
+@pytest.mark.parametrize("placeholder", ["null", "unknown", "0", "000000", "111111"])
+def test_placeholder_identity_is_not_ownership_proof(placeholder):
+    row = parse(f"NameEn,BuildingNameEn,UnitNumber,IdNumber\nExample,Tower,101,{placeholder}\n")[0]
+    assert not row.owner_identity_tokens
